@@ -22,7 +22,7 @@
    Revision History: (see the README.txt file for detailed revision history)
 */
 
-#define VERSION_TIMESTAMP "REAST 1.3"
+#define VERSION_TIMESTAMP "REAST 1.4"
 
 //#define GPS_TRY_REVERSED_RXTX_FIRST                                            // uncomment/activate this to try the reversed GPS RX/TX pin definition first
 //#define DISABLE_BUTTON_DEF_TIMEOUT                                             // uncomment to disable the automatic timeout on the initial button definition screen
@@ -4120,12 +4120,29 @@ void show5VDC(uint16_t x, uint16_t y)
 
 void showAltitude(void)
 {
-   String headings = "Alt (ft):";
+   String headings;
+   String altitudeStr;
+
+   if (useMetric)
+   {
+      char *endPtr;
+      float altitudeInFeetFloat = strtof(qthAltitudeInFeet.c_str(), &endPtr);
+      float altitudeInMetersFloat = altitudeInFeetFloat * 12.0 / NUMBER_OF_INCHES_PER_METER;
+
+      char altitudeInMetersStr[16] = { 0x00 };
+      sprintf(altitudeInMetersStr, "%.2f", (float)((round(altitudeInMetersFloat * 100.0)) / 100.0));
+
+      headings    = "Alt (m):";
+      altitudeStr = (String)altitudeInMetersStr;
+   } else {
+      headings    = "Alt (ft):";
+      altitudeStr = qthAltitudeInFeet;
+   }
 
    tft.setTextColor (labelFGColor, labelBGColor);
    tft.drawString (headings, 80, 123, 4);
    tft.setTextColor(normalColor, labelBGColor);
-   tft.drawString (qthAltitudeInFeet, 160, 123, 4);
+   tft.drawString (altitudeStr, 160, 123, 4);
 
    tft.setTextColor(labelFGColor, labelBGColor);
 }  // showAltitude()
