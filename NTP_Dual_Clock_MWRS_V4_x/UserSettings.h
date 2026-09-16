@@ -4,7 +4,7 @@
    have the software version number in the 'TITLE' while still developing the code.
 */
 
-#define DEFAULT_TITLE "ver 4.x"                       // Can be any (up to) 8 characters max
+#define DEFAULT_TITLE "REAST"                       // Can be any (up to) 8 characters max
 
 
 /*

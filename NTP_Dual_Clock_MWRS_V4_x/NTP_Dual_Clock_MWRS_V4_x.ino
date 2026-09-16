@@ -22,7 +22,7 @@
    Revision History: (see the README.txt file for detailed revision history)
 */
 
-#define VERSION_TIMESTAMP "REAST 1.2"
+#define VERSION_TIMESTAMP "REAST 1.3"
 
 //#define GPS_TRY_REVERSED_RXTX_FIRST                                            // uncomment/activate this to try the reversed GPS RX/TX pin definition first
 //#define DISABLE_BUTTON_DEF_TIMEOUT                                             // uncomment to disable the automatic timeout on the initial button definition screen
@@ -33,7 +33,6 @@
 #include <ArduinoJson.h>                                                       // Used to parse the internet weather data
 #include "tft_setup.h"                                                         // Customized settings for TFT display (varies by target processor)
 #include "UserSettings.h"                                                      // User customizable defaults & settings
-#include "Certificate.h"                                                       // The hamqsl SSL certificate
 #include <Button2.h>                                                           // Changed from "Button.h" 12/12/25
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -244,7 +243,7 @@ uint32_t clockTime = millis();
 #define SOLAR_INTERVAL_IN_SECONDS 601                                          // update solar data interval - odd number so it drifts away from being right on every minute
 int32_t solarDelayCount = 0;
 
-#define SOLAR_URL "https://www.hamqsl.com/solarxml.php"                        // hamqsl provides the solar data
+#define SOLAR_URL "http://www.hamqsl.com/solarxml.php"                         // hamqsl provides the solar data
 
 #include <Wire.h>                                                              // For the SPI Bus
 #include <Adafruit_Sensor.h>                                                   // Libraries for the BME280
@@ -286,8 +285,8 @@ boolean needAppIDFlag = false;
 
 //const String latDefault     = "-29.3";
 //const String lonDefault     = "152.72";
-const String latDefault     = "32.625186";
-const String lonDefault     = "-97.347510";
+const String latDefault     = "-42.862252";
+const String lonDefault     = "147.319885";
 
 String gpsManualLat = latDefault;
 String gpsManualLon = lonDefault;
@@ -778,25 +777,25 @@ void forceDefaults(boolean requireConfirm)
       // Start modifying network preferences
       prefs.begin("network", false);
 
-      prefs.putString("wifissid1", "RV_THERE_YET_2G");
-      prefs.putString("wifipass1", "817M919C8852");
+      prefs.putString("wifissid1", "");
+      prefs.putString("wifipass1", "");
 
-      prefs.putString("wifissid2", "RV_THERE_YET_SL");
-      prefs.putString("wifipass2", "817M919C8852");
+      prefs.putString("wifissid2", "");
+      prefs.putString("wifipass2", "");
 
-      prefs.putString("wifissid3", "817Culross551Home6015-2G");
-      prefs.putString("wifipass3", "1820HuntingGreenDrive");
+      prefs.putString("wifissid3", "");
+      prefs.putString("wifipass3", "");
 
-      prefs.putString("wifissid4", "k5cow");
-      prefs.putString("wifipass4", "147.28FMk5cow");
+      prefs.putString("wifissid4", "");
+      prefs.putString("wifipass4", "");
 
-      prefs.putString("wifissid5", "MJC_EVO");
-      prefs.putString("wifipass5", "817M919C8852");
+      prefs.putString("wifissid5", "");
+      prefs.putString("wifipass5", "");
 
-      prefs.putString("wifissid6", "MOTOE3C0");
-      prefs.putString("wifipass6", "acyvu46439");
+      prefs.putString("wifissid6", "");
+      prefs.putString("wifipass6", "");
 
-      prefs.putString("loginusername", "mjculross");
+      prefs.putString("loginusername", "");
       prefs.putString("loginpassword", "");
 
       prefs.putString("apName", apName);
@@ -864,7 +863,7 @@ void forceDefaults(boolean requireConfirm)
       prefs.putBool("showmst", showMSTMDT);
 
       showMSTNOMDT = DEFAULT_SHOW_MST_NO_MDT_TZ;
-      prefs.putBool("showmst", showMSTNOMDT);
+      prefs.putBool("showmstonly", showMSTNOMDT);
 
       showPSTPDT = DEFAULT_SHOW_PST_PDT_TZ;
       prefs.putBool("showpst", showPSTPDT);
@@ -1485,11 +1484,7 @@ void getSolarData(void)
          }
 
          HTTPClient clientHttps;
-         WiFiClientSecure sClient;
-
-         //         sClient.setCACert(HQSL_Root_Cert);
-         sClient.setInsecure();
-         sClient.setHandshakeTimeout(5);
+         WiFiClient sClient;
 
          int responseCode = clientHttps.begin(sClient, SOLAR_URL);             // Open the URL connection
 
@@ -1569,7 +1564,7 @@ void getWeatherData(void)
    {
       if (--weatherDelayCount <= 0)
       {
-         const String baseURL        = "https://api.openweathermap.org/data/2.5/weather";
+         const String baseURL        = "http://api.openweathermap.org/data/2.5/weather";
          const String latTag         = "?lat=";
          const String lonTag         = "&lon=";
          const String unitsImperial  = "&units=imperial";
@@ -1598,10 +1593,7 @@ void getWeatherData(void)
          }
 
          HTTPClient clientHttps;
-         WiFiClientSecure sClient;
-
-         sClient.setInsecure();
-         sClient.setHandshakeTimeout(5);
+         WiFiClient sClient;
 
          if (clientHttps.begin(sClient, WEATHER_URL))                          // Open the URL connection
          {
@@ -3170,7 +3162,7 @@ void readSettings(void)
       prefs.putBool("showmst", showMSTMDT);
    }
 
-   if (prefs.isKey("showestonly"))
+   if (prefs.isKey("showmstonly"))
    {
       showMSTNOMDT = prefs.getBool("showmstonly", DEFAULT_SHOW_MST_NO_MDT_TZ);
    } else {
@@ -3215,7 +3207,7 @@ void readSettings(void)
       showGMTBST = prefs.getBool("showgmt", DEFAULT_SHOW_GMT_BST_TZ);
    } else {
       showGMTBST = DEFAULT_SHOW_GMT_BST_TZ;
-      prefs.putBool("showgmt", showESTEDT);
+      prefs.putBool("showgmt", showGMTBST);
    }
 
    // make sure that at least one timezone is selected (you choose which it is)
@@ -3366,7 +3358,7 @@ void readSettings(void)
       humidityOffset = prefs.getInt("humoffset", DEFAULT_HUMIDITY_OFFSET);
    } else {
       humidityOffset = DEFAULT_HUMIDITY_OFFSET;
-      prefs.putInt("hunoffset", humidityOffset);
+      prefs.putInt("humoffset", humidityOffset);
    }
 
    prefs.end();
