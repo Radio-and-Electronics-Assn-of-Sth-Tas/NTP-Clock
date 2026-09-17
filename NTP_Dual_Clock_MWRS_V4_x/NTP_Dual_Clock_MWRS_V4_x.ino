@@ -22,7 +22,7 @@
    Revision History: (see the README.txt file for detailed revision history)
 */
 
-#define VERSION_TIMESTAMP "REAST 1.4"
+#define VERSION_TIMESTAMP "REAST 1.5"
 
 //#define GPS_TRY_REVERSED_RXTX_FIRST                                            // uncomment/activate this to try the reversed GPS RX/TX pin definition first
 //#define DISABLE_BUTTON_DEF_TIMEOUT                                             // uncomment to disable the automatic timeout on the initial button definition screen
@@ -216,6 +216,9 @@ const char *apPWD = 0;                                                         /
 uint8_t apChannel = DEFAULT_AP_CHANNEL;                                        // WiFi channel number (1..13)
 const boolean apHideMe = false;                                                // Hide SSID broadcast when true
 const uint8_t apClientsMax = 1;                                                // Maximum simultaneous connected clients
+
+#define DEFAULT_NTP_SERVER "pool.ntp.org"                                      // Default NTP server (configurable via the NETWORK web page)
+String ntpServer = String(DEFAULT_NTP_SERVER);
 
 uint16_t ajaxInterval = 2500;
 
@@ -800,6 +803,9 @@ void forceDefaults(boolean requireConfirm)
 
       prefs.putString("apName", apName);
       prefs.putInt("apChannel", apChannel);
+
+      ntpServer = String(DEFAULT_NTP_SERVER);
+      prefs.putString("ntpServer", ntpServer);
 
       wifiRetryAuto = DEFAULT_WIFI_RETRY_MODE;
       prefs.putBool("wifiRetryAuto", wifiRetryAuto);
@@ -2404,17 +2410,12 @@ void loop(void)
 
                   if (pressedDuration >= EXTRA_LONG_BUTTON_PRESS_TIME_IN_MS)
                   {
-                     loginPassword = String();
+                     // Force WiFi Access Point mode - lets the device be reconfigured
+                     // even while it's already connected (or trying to connect) to a home network
+                     Serial.println("Forcing WiFi Access Point mode...");
 
-                     // Start modifying network preferences
-                     prefs.begin("network", false);
-
-                     prefs.putString("loginpassword", loginPassword);
-
-                     // Done with modifying network preferences
-                     prefs.end();
-
-                     Serial.println("Network login password cleared...");
+                     WiFi.mode(WIFI_AP_STA);
+                     wifiInitAP();
                   }
 
                   // in any case (long click or extra long click), choose whether to reboot the whole NTPclock or not
@@ -3905,7 +3906,9 @@ void setup(void)
 
    netInit();
 
-   configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");                   // Set time via NTP, as required for x.509 validation
+   setServer(ntpServer);                                                       // Use the configured NTP server for ezTime's sync
+
+   configTime(3 * 3600, 0, ntpServer.c_str(), "time.nist.gov");                // Set time via NTP, as required for x.509 validation
 
    // determine which TZ to display first
    if (showESTEDT)
@@ -7129,6 +7132,11 @@ const String webNetworkPage(void)
              "<TD><CLASS='LABEL'>Password</TD>"
              "<TD>" + webInputField("password", loginPassword, true) + "</TD>"
              "</TR>"
+             "<TR><TH COLSPAN=2 CLASS='HEADING'>NTP Time Sync</TH></TR>"
+             "<TR>"
+             "<TD><CLASS='LABEL'>NTP Server</TD>"
+             "<TD>" + webInputField("ntpserver", ntpServer) + "</TD>"
+             "</TR>"
              "<TR><TH COLSPAN=2 CLASS='HEADING'>WiFi Network 1</TH></TR>"
              "<TR>"
              "<TD><CLASS='LABEL'>SSID</TD>"
@@ -8059,6 +8067,34 @@ void webSetNetwork(AsyncWebServerRequest * request)
       }
    }
 
+   // Save NTP server
+   if (request->hasParam("ntpserver", true))
+   {
+      String new_ntp_server = request->getParam("ntpserver", true)->value();
+
+      // if the new NTP server is not empty
+      if (new_ntp_server.length())
+      {
+         if (ntpServer != new_ntp_server)
+         {
+            ntpServer = new_ntp_server;
+
+            prefs.putString("ntpServer", ntpServer);
+
+            // apply immediately, both for ezTime's sync and the SNTP client
+            setServer(ntpServer);
+            configTime(3 * 3600, 0, ntpServer.c_str(), "time.nist.gov");
+         }
+      } else {
+         ntpServer = String(DEFAULT_NTP_SERVER);
+
+         prefs.putString("ntpServer", ntpServer);
+
+         setServer(ntpServer);
+         configTime(3 * 3600, 0, ntpServer.c_str(), "time.nist.gov");
+      }
+   }
+
    // Save AP channel
    if (request->hasParam("apchannel", true))
    {
@@ -8332,6 +8368,11 @@ void wifiInitAP(void)
    if (prefs.isKey("apChannel"))
    {
       apChannel = prefs.getInt("apChannel", DEFAULT_AP_CHANNEL);
+   }
+
+   if (prefs.isKey("ntpServer"))
+   {
+      ntpServer = prefs.getString("ntpServer", String(DEFAULT_NTP_SERVER));
    }
 
    // Done with preferences

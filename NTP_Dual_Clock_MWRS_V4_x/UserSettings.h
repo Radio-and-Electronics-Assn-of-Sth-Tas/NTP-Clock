@@ -26,9 +26,9 @@ const char timeZones[][50] = {                        // List of timezones that 
    "MST7",                                            // Arizona time (no DST)
    "PST8PDT,M3.2.0/2:00:00,M11.1.0/2:00:00",          // US Pacific Time
    "AWST-8",                                          // AUS Western time
-   "ACST-9:30ACDT,M10.1.0/2:00:00,M4.1.0/2:00:00",    // AUS Central time
-   "AEST-10AEDT,M10.1.0/2:00:00,M4.1.0/2:00:00",      // AUS Eastern time
-   "GMT1BST,M3.5.0/1:00:00,M10.5.0/2:00:00",          // UK time
+   "ACST-9:30ACDT,M10.1.0/2:00:00,M4.1.0/3:00:00",    // AUS Central time
+   "AEST-10AEDT,M10.1.0/2:00:00,M4.1.0/3:00:00",      // AUS Eastern time
+   "GMT0BST,M3.5.0/1:00:00,M10.5.0/2:00:00",          // UK time
 };
 
 #define DEFAULT_SHOW_EST_EDT_TZ         false
