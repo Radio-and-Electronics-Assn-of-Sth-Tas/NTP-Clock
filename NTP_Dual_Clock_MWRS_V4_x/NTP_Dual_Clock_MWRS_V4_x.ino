@@ -22,7 +22,7 @@
    Revision History: (see the README.txt file for detailed revision history)
 */
 
-#define VERSION_TIMESTAMP "REAST 1.5"
+#define VERSION_TIMESTAMP "REAST 1.6"
 
 //#define GPS_TRY_REVERSED_RXTX_FIRST                                            // uncomment/activate this to try the reversed GPS RX/TX pin definition first
 //#define DISABLE_BUTTON_DEF_TIMEOUT                                             // uncomment to disable the automatic timeout on the initial button definition screen
@@ -246,7 +246,7 @@ uint32_t clockTime = millis();
 #define SOLAR_INTERVAL_IN_SECONDS 601                                          // update solar data interval - odd number so it drifts away from being right on every minute
 int32_t solarDelayCount = 0;
 
-#define SOLAR_URL "http://www.hamqsl.com/solarxml.php"                         // hamqsl provides the solar data
+#define SOLAR_URL "https://www.hamqsl.com/solarxml.php"                       // hamqsl provides the solar data
 
 #include <Wire.h>                                                              // For the SPI Bus
 #include <Adafruit_Sensor.h>                                                   // Libraries for the BME280
@@ -609,6 +609,7 @@ void showTemp(void);
 void showTime(time_t t, boolean hr24, uint16_t x, uint16_t y);
 void showTimeDate(boolean useLocalTime, time_t t, boolean hr24, uint16_t x, uint16_t y);
 void showTimeZone(boolean useLocalTime, uint16_t x, uint16_t y);
+void showVersionInfo(void);
 void showWiFiInfo(void);
 void showWiFiStatus(void);
 void showWind(void);
@@ -1487,10 +1488,15 @@ void getSolarData(void)
          if (debugSolar)
          {
             Serial.println("Calling Solar HTTPS begin()");
+            Serial.print("Free heap before solar TLS connect: ");
+            Serial.println(ESP.getFreeHeap());
          }
 
          HTTPClient clientHttps;
-         WiFiClient sClient;
+         WiFiClientSecure sClient;
+
+         sClient.setInsecure();
+         sClient.setHandshakeTimeout(10);
 
          int responseCode = clientHttps.begin(sClient, SOLAR_URL);             // Open the URL connection
 
@@ -1596,6 +1602,8 @@ void getWeatherData(void)
          {
             Serial.print("Sending Weather HTTP request to: ");
             Serial.println(WEATHER_URL);
+            Serial.print("Free heap before weather connect: ");
+            Serial.println(ESP.getFreeHeap());
          }
 
          HTTPClient clientHttps;
@@ -2676,10 +2684,28 @@ void netInit(void)
 }  // netInit()
 
 
+void showVersionInfo(void)                                                     // Show firmware version - and IP address, if connected to a WiFi network
+{
+   String verStr = String("Ver: ") + VERSION_TIMESTAMP;
+
+   if (getWiFiStatus() == WIFI_NET_CONNECTED)
+   {
+      tft.setTextDatum(TL_DATUM);
+      tft.drawString(verStr, 5, 226, 2);                                       // version info, left-aligned
+
+      tft.setTextDatum(TR_DATUM);
+      tft.drawString(WiFi.localIP().toString(), 315, 226, 2);                  // IP address, right-aligned
+
+      tft.setTextDatum(TC_DATUM);                                              // restore the datum callers expect afterward
+   } else {
+      tft.setTextDatum(TC_DATUM);
+      tft.drawString(verStr, 160, 226, 2);                                     // version info, centered
+   }
+}  // showVersionInfo()
+
+
 void newDualScreen(void)                                                       // Displays the fixed parts
 {
-   String verStr = String("rev: ") + VERSION_TIMESTAMP;
-
    tft.setTextDatum(TC_DATUM);
 
    tft.fillScreen(screenBGColor);
@@ -2691,7 +2717,7 @@ void newDualScreen(void)                                                       /
       tft.setTextColor(TFT_BLACK, screenBGColor);
    }
 
-   tft.drawString(verStr, 160, 226, 2);                                        // put version info on the screen
+   showVersionInfo();
 
    if (nightMode)
    {
@@ -3591,8 +3617,7 @@ boolean selectForceDefaults(void)
    tft.drawString("RIGHT (WIFI/CONFIG) = CONFIRM", 160, 170);
    tft.drawString("LEFT (BRIGHT) = CANCEL", 160, 140);
 
-   String verStr = String("rev: ") + VERSION_TIMESTAMP;
-   tft.drawString(verStr, 160, 226, 2);                                        // put version info on the screen
+   showVersionInfo();
 
    tft.setTextColor(warningColor);
 
@@ -3657,8 +3682,7 @@ int8_t selectGPSResetType(void)
    tft.drawString("PRESS RIGHT (WIFI/CONFIG) TO", 160, 150);
    tft.drawString("FACTORY RESET THE GPS", 160, 170);
 
-   String verStr = String("rev: ") + VERSION_TIMESTAMP;
-   tft.drawString(verStr, 160, 226, 2);                                        // put version info on the screen
+   showVersionInfo();
 
    tft.setTextColor(warningColor);
 
@@ -3743,8 +3767,7 @@ boolean selectReboot(void)
    tft.drawString("LEFT (BRIGHT) = REBOOT", 160, 150);
    tft.drawString("RIGHT (WIFI/CONFIG) = WIFI INFO", 160, 180);
 
-   String verStr = String("rev: ") + VERSION_TIMESTAMP;
-   tft.drawString(verStr, 160, 226, 2);                                        // put version info on the screen
+   showVersionInfo();
 
    tft.setTextColor(warningColor);
 
@@ -4169,8 +4192,7 @@ void showAppIDNagScreen(void)
    tft.drawString(F("then use this clock's web interface"), 160, 180, 2);
    tft.drawString(F("to confgure it with your new API Key"), 160, 200, 2);
 
-   String verStr = String("rev: ") + VERSION_TIMESTAMP;
-   tft.drawString(verStr, 160, 226, 2);                                        // put version info on the screen
+   showVersionInfo();
 
    tft.setTextDatum(TL_DATUM);
 }  // showAppIDNagScreen()
@@ -4230,9 +4252,7 @@ void showButtonDefinitions(void)
    tft.drawString(F("Long-click"), 50, 185, 2);
    tft.drawString(F("Reboot/WiFi Info"), 160, 185, 2);
 
-   String verStr = String("rev: ") + VERSION_TIMESTAMP;
-   tft.setTextDatum(TC_DATUM);
-   tft.drawString(verStr, 160, 226, 2);                                        // put version info on the screen
+   showVersionInfo();
 
    tft.setTextColor(warningColor);
 
@@ -5913,8 +5933,7 @@ void showWiFiInfo(void)
 
    tft.setTextDatum(TC_DATUM);
 
-   String verStr = String("rev: ") + VERSION_TIMESTAMP;
-   tft.drawString(verStr, 160, 226, 2);                                        // put version info on the screen
+   showVersionInfo();
 
    tft.setTextColor(warningColor);
 
@@ -6993,6 +7012,18 @@ void webInit(void)
 
    server.on("/debug", HTTP_ANY, [] (AsyncWebServerRequest * request) {
       request->send(200, "text/html", webDebugPage());
+   });
+
+   // Force an immediate weather data refresh (only takes effect if weather is currently selected for display)
+   server.on("/refreshweather", HTTP_ANY, [] (AsyncWebServerRequest * request) {
+      weatherDelayCount = 1;
+      request->redirect("/");
+   });
+
+   // Force an immediate solar data refresh (only takes effect if solar is currently selected for display)
+   server.on("/refreshsolar", HTTP_ANY, [] (AsyncWebServerRequest * request) {
+      solarDelayCount = 1;
+      request->redirect("/");
    });
 
    server.onNotFound([] (AsyncWebServerRequest * request) {
@@ -8290,6 +8321,14 @@ const String webStatusPage()
              "<TR>"
              "<TD><CLASS='LABEL'>MAC:</TD>"
              "<TD>" + String(WiFi.macAddress()) + "</TD>"
+             "</TR>"
+             "</TABLE>"
+             "<BR>"
+             "<TABLE COLUMNS=2>"
+             "<TR><TH COLSPAN=2 CLASS='HEADING'>Data Refresh</TH></TR>"
+             "<TR>"
+             "<TD><FORM ACTION='/refreshweather' METHOD='POST'><INPUT TYPE='SUBMIT' VALUE='Refresh Weather Now'></FORM></TD>"
+             "<TD><FORM ACTION='/refreshsolar' METHOD='POST'><INPUT TYPE='SUBMIT' VALUE='Refresh Solar Now'></FORM></TD>"
              "</TR>"
              "</TABLE>"
           );

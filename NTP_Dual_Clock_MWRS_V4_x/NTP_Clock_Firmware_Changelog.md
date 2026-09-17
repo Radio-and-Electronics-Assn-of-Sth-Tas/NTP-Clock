@@ -1,4 +1,4 @@
-# NTP Clock (REAST V1.5) — Firmware Change Summary
+# NTP Clock (REAST V1.6) — Firmware Change Summary
 
 Board: Lolin S2 Mini (ESP32-S2FN4R2) — note the PCB schematic (rev 1.1) only shows footprints for a WEMOS D1 mini or ESP32-C3 Zero, so this board's wiring to the S2 Mini is custom/hand-wired and not reflected in the schematic.
 
@@ -104,3 +104,11 @@ Bug #2 was the most user-visible — the "Show MST (only)" checkbox could never 
 
 - **`ACST-9:30ACDT,...,M4.1.0/2:00:00`** and **`AEST-10AEDT,...,M4.1.0/2:00:00`** — the end-of-DST time should be `3:00:00`, not `2:00:00` (POSIX TZ end-transition times are expressed in daylight-time terms, and Australia's clocks fall back from 3am ACDT/AEDT to 2am ACST/AEST).
 - **`GMT1BST,...`** — should be `GMT0BST,...`. `GMT1` incorrectly means UTC−1 year-round; GMT is UTC+0.
+
+## 10. Show IP Address at bottom of screen
+
+- If connected to wifi as a station, show the current IP Address on the bottom of the screen.
+
+## 11. Fix Solar Data
+
+- Solar data requires https.
