@@ -1,4 +1,4 @@
-# NTP Clock (VK2ARH V2.1) — Firmware Change Summary
+# NTP Clock (REAST V1.5) — Firmware Change Summary
 
 Board: Lolin S2 Mini (ESP32-S2FN4R2) — note the PCB schematic (rev 1.1) only shows footprints for a WEMOS D1 mini or ESP32-C3 Zero, so this board's wiring to the S2 Mini is custom/hand-wired and not reflected in the schematic.
 
